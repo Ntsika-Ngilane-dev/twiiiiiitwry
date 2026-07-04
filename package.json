@@ -6,12 +6,11 @@
   "homepage": "https://ntsika-ngilane-dev.github.io/twiiiiter/",
   "scripts": {
     "dev": "vite",
-    "build": "react-scripts build",
+    "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build",
-    "start": "react-scripts start"
   },
   "dependencies": {
     "react": "^18.3.1",
