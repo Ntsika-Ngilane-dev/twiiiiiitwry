@@ -1,13 +1,1792 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="A polished Twitter timeline clone built with React" />
-    <title>Twiiiiter</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tweets - Share Your Thoughts</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1d9bf0;
+            --dark-bg: #000;
+            --card-bg: #16181c;
+            --border: #2f3336;
+            --text: #e7e9ea;
+            --text-muted: #71767b;
+        }
+
+        body.light-mode {
+            --primary: #1d9bf0;
+            --dark-bg: #ffffff;
+            --card-bg: #f7f9fa;
+            --border: #eff3f4;
+            --text: #0f1419;
+            --text-muted: #536471;
+        }
+
+        body {
+            background: var(--dark-bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.5;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 280px 1fr 350px;
+            height: 100vh;
+            gap: 0;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            border-right: 1px solid var(--border);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+            position: sticky;
+            top: 0;
+        }
+
+        .logo {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        nav {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        nav a {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 16px;
+            border-radius: 50px;
+            color: var(--text);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 20px;
+            font-weight: 500;
+        }
+
+        nav a:hover, nav a.active {
+            background: rgba(29, 155, 240, 0.1);
+            color: var(--primary);
+        }
+
+        .nav-icon {
+            font-size: 20px;
+            min-width: 24px;
+        }
+
+        .compose-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 32px;
+            border-radius: 50px;
+            font-size: 17px;
+            font-weight: 700;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .compose-btn:hover {
+            background: #1a8cd8;
+        }
+
+        .logout-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(244, 36, 94, 0.1);
+            color: #f4245e;
+            border-color: #f4245e;
+        }
+
+        .theme-toggle {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(29, 155, 240, 0.1);
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        /* Main Feed */
+        .feed {
+            border-left: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            height: 100vh;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* Composer */
+        .composer {
+            border-bottom: 1px solid var(--border);
+            padding: 16px;
+            background: var(--dark-bg);
+            sticky: top;
+        }
+
+        .composer-header {
+            margin-bottom: 16px;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .composer-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .composer-top {
+            display: flex;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .composer-input {
+            flex: 1;
+        }
+
+        textarea {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-size: 20px;
+            resize: none;
+            outline: none;
+            min-height: 60px;
+            font-family: inherit;
+        }
+
+        textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .composer-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ai-btn {
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 8px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .ai-btn:hover {
+            background: rgba(29, 155, 240, 0.1);
+        }
+
+        .post-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .post-btn:hover {
+            background: #1a8cd8;
+        }
+
+        .post-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .char-count {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Posts */
+        .posts {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .post {
+            display: flex;
+            gap: 12px;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .post:hover {
+            background: rgba(29, 155, 240, 0.03);
+        }
+
+        .post-content {
+            flex: 1;
+        }
+
+        .post-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .post-author {
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .post-handle {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .post-time {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .post-text {
+            color: var(--text);
+            font-size: 15px;
+            line-height: 1.5;
+            margin: 12px 0;
+        }
+
+        .post-image {
+            width: 100%;
+            max-height: 300px;
+            border-radius: 16px;
+            margin: 12px 0;
+            object-fit: cover;
+        }
+
+        .post-actions {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 12px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            color: var(--primary);
+            background: rgba(29, 155, 240, 0.1);
+        }
+
+        .action-btn.liked {
+            color: #f4245e;
+        }
+
+        /* Right Sidebar */
+        .right-sidebar {
+            padding: 16px;
+            overflow-y: auto;
+            background: var(--dark-bg);
+        }
+
+        .trends {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 16px;
+        }
+
+        .trends h2 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .trend {
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .trend:hover {
+            background: rgba(29, 155, 240, 0.1);
+        }
+
+        .trend-category {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .trend-name {
+            font-weight: 700;
+            margin: 4px 0;
+        }
+
+        .trend-count {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--dark-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(29, 155, 240, 0.1);
+        }
+
+        /* User Cards */
+        .user-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .user-name:hover {
+            color: var(--primary);
+        }
+
+        .user-handle {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .user-bio {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+
+        .follow-btn {
+            background: var(--text);
+            color: var(--dark-bg);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .follow-btn:hover {
+            background: var(--text-muted);
+        }
+
+        .follow-btn.following {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .follow-btn.following:hover {
+            background: rgba(244, 36, 94, 0.1);
+            border-color: #f4245e;
+            color: #f4245e;
+        }
+
+        /* Messages Layout */
+        .messages-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            height: 100%;
+        }
+
+        .conversations {
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+        }
+
+        .conversation {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .conversation:hover {
+            background: rgba(29, 155, 240, 0.1);
+        }
+
+        .message-thread {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .messages-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 700;
+        }
+
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .message {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .message.sent {
+            justify-content: flex-end;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            background: var(--card-bg);
+        }
+
+        .message.sent .message-bubble {
+            background: var(--primary);
+        }
+
+        .message-input {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 12px;
+        }
+
+        .message-input textarea {
+            flex: 1;
+            min-height: 40px;
+        }
+
+        .message-send-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            align-self: flex-end;
+        }
+
+        /* Profile */
+        .profile-header {
+            background: var(--card-bg);
+            padding: 32px 16px 20px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .profile-banner {
+            height: 120px;
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            border-radius: 16px 16px 0 0;
+            margin-bottom: -40px;
+        }
+
+        .profile-content-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            margin: 12px;
+        }
+
+        .profile-meta {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin: 10px 0;
+        }
+
+        .profile-bio {
+            color: var(--text);
+            margin: 10px 0 6px;
+            max-width: 560px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .profile-badges {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .profile-badge {
+            background: rgba(29, 155, 240, 0.12);
+            color: var(--primary);
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .profile-action-row {
+            display: flex;
+            justify-content: center;
+            margin-top: 14px;
+        }
+
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: var(--primary);
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            font-weight: bold;
+            color: white;
+            object-fit: cover;
+            position: relative;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .profile-avatar:hover {
+            opacity: 0.8;
+        }
+
+        .profile-avatar.image {
+            background: transparent;
+            font-size: 0;
+        }
+
+        .profile-picture-upload {
+            display: none;
+        }
+
+        .profile-avatar-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 16px;
+            cursor: pointer;
+        }
+
+        .profile-avatar-upload-hint {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: var(--primary);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 3px solid var(--dark-bg);
+        }
+
+        body.light-mode .profile-avatar-upload-hint {
+            border-color: var(--dark-bg);
+        }
+
+        .profile-avatar-upload-hint:hover {
+            background: #1a8cd8;
+            transform: scale(1.1);
+        }
+
+        .profile-name {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .profile-stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 16px 0;
+            color: var(--text-muted);
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-value {
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 280px 1fr;
+            }
+            .right-sidebar {
+                display: none;
+            }
+        }
+
+        @media (max-width: 800px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                display: none;
+            }
+            .nav-label {
+                display: none;
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal active">
+        <div class="modal-content">
+            <h1 style="margin-bottom: 24px;">Welcome to Tweets</h1>
+            <button type="button" class="theme-toggle" onclick="toggleTheme()" style="width: auto; margin-bottom: 16px; padding: 8px 14px;">
+                <span>🌙</span>
+                <span>Dark mode</span>
+            </button>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="nameInput" placeholder="Your name" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="emailInput" placeholder="your@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Bio (optional)</label>
+                    <textarea id="bioInput" placeholder="Tell us about yourself" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Profile picture (optional)</label>
+                    <input type="file" id="signInPictureInput" accept="image/*" onchange="handleSignInProfilePictureUpload(event)">
+                    <div id="signInPicturePreview" style="display: none; margin-top: 8px; align-items: center; gap: 10px;">
+                        <img id="signInPicturePreviewImage" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
+                        <span style="color: var(--text-muted); font-size: 14px;">Profile picture ready</span>
+                    </div>
+                </div>
+                <button type="submit" class="post-btn" style="width: 100%; padding: 12px;">Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Compose Modal -->
+    <div id="composeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Compose Tweet</h2>
+                <button class="close-btn" onclick="closeModal('composeModal')">×</button>
+            </div>
+            <form id="composeForm">
+                <div class="form-group">
+                    <textarea id="composeTweet" placeholder="What's happening?!" maxlength="280" rows="6"></textarea>
+                    <div style="text-align: right; margin-top: 8px; color: var(--text-muted); font-size: 14px;">
+                        <span id="charCount">0</span>/280
+                    </div>
+                </div>
+                <div style="display: flex; gap: 12px; margin-top: 16px;">
+                    <button type="button" class="ai-btn" onclick="getAISuggestion()">✨ AI Idea</button>
+                    <button type="submit" class="post-btn" style="flex: 1;">Tweet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Message Modal -->
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Send Message</h2>
+                <button class="close-btn" onclick="closeModal('messageModal')">×</button>
+            </div>
+            <form id="messageForm">
+                <div class="form-group">
+                    <label>To</label>
+                    <input type="text" id="messageRecipient" placeholder="Select user" required>
+                </div>
+                <div class="form-group">
+                    <label>Message</label>
+                    <textarea id="messageText" placeholder="Your message..." maxlength="500" rows="4" required></textarea>
+                </div>
+                <button type="submit" class="post-btn" style="width: 100%;">Send</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Layout -->
+    <div class="container" id="mainContainer" style="display: none;">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">𝕏</div>
+            <nav>
+                <a class="nav-item active" data-page="home" onclick="switchPage('home')">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-label">Home</span>
+                </a>
+                <a class="nav-item" data-page="explore" onclick="switchPage('explore')">
+                    <span class="nav-icon">🔍</span>
+                    <span class="nav-label">Explore</span>
+                </a>
+                <a class="nav-item" data-page="messages" onclick="switchPage('messages')">
+                    <span class="nav-icon">💬</span>
+                    <span class="nav-label">Messages</span>
+                </a>
+                <a class="nav-item" data-page="bookmarks" onclick="switchPage('bookmarks')">
+                    <span class="nav-icon">🔖</span>
+                    <span class="nav-label">Bookmarks</span>
+                </a>
+                <a class="nav-item" data-page="profile" onclick="switchPage('profile')">
+                    <span class="nav-icon">👤</span>
+                    <span class="nav-label">Profile</span>
+                </a>
+            </nav>
+            <button class="compose-btn" onclick="openModal('composeModal')">Post</button>
+            <button class="theme-toggle" id="sidebarThemeToggle" onclick="toggleTheme()">
+                <span>🌙</span>
+                <span>Dark mode</span>
+            </button>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+
+        <!-- Feed -->
+        <div class="feed">
+            <!-- Home Page -->
+            <div id="homePage" class="page active">
+                <div class="composer">
+                    <div class="composer-header">What's happening?!</div>
+                    <form class="composer-form" onsubmit="postTweet(event)">
+                        <div class="composer-top">
+                            <div class="avatar" id="userAvatar"></div>
+                            <div class="composer-input">
+                                <textarea id="tweetInput" placeholder="Share your thoughts..." maxlength="280"></textarea>
+                            </div>
+                        </div>
+                        <div class="composer-actions">
+                            <button type="button" class="ai-btn" onclick="getAISuggestion()">✨ AI Idea</button>
+                            <span class="char-count"><span id="charCount2">0</span>/280</span>
+                            <button type="submit" class="post-btn">Post</button>
+                        </div>
+                    </form>
+                </div>
+                <div id="feedPosts" class="posts"></div>
+            </div>
+
+            <!-- Explore Page -->
+            <div id="explorePage" class="page">
+                <div style="padding: 16px; border-bottom: 1px solid var(--border);">
+                    <h2>Explore</h2>
+                </div>
+                <div id="exploreUsers" style="padding: 16px;"></div>
+            </div>
+
+            <!-- Messages Page -->
+            <div id="messagesPage" class="page">
+                <div class="messages-layout">
+                    <div class="conversations" id="conversationsList"></div>
+                    <div class="message-thread" id="messageThread">
+                        <div class="messages-header">Select a conversation</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bookmarks Page -->
+            <div id="bookmarksPage" class="page">
+                <div style="padding: 16px; border-bottom: 1px solid var(--border);">
+                    <h2>Bookmarks</h2>
+                </div>
+                <div id="bookmarksPosts" class="posts"></div>
+            </div>
+
+            <!-- Profile Page -->
+            <div id="profilePage" class="page">
+                <div id="profileContent"></div>
+            </div>
+        </div>
+
+        <!-- Right Sidebar -->
+        <div class="right-sidebar">
+            <div class="trends">
+                <h2>What's Happening</h2>
+                <div id="trendsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Cursor AI Suggestions
+        const aiSuggestions = [
+            "Just shipped a new feature! Feeling productive today 🚀",
+            "Learning something new every day. What's your favorite tech stack?",
+            "The best time to start is now. Let's build something amazing!",
+            "Debugging feels like detective work. Anyone else? 🔍",
+            "Code reviews are the best. They make us better developers.",
+            "The future is being written right now. Are you ready to code it?",
+            "Coffee ☕ + code = perfection",
+            "Open source is where the magic happens ✨",
+            "Great design is invisible. Users shouldn't notice it.",
+            "Deployment day = adrenaline rush ⚡"
+        ];
+
+        // State
+        let currentUser = null;
+        let users = [];
+        let tweets = [];
+        let bookmarks = [];
+        let messages = {};
+        let currentPage = 'home';
+        let selectedConversation = null;
+        let selectedProfileUserId = null;
+        let pendingProfilePicture = null;
+
+        // Init
+        function init() {
+            loadTheme();
+            loadState();
+            if (!currentUser) {
+                document.getElementById('loginModal').classList.add('active');
+            } else {
+                showMainApp();
+            }
+            setupEventListeners();
+        }
+
+        function updateThemeUI() {
+            const isLight = document.body.classList.contains('light-mode');
+            const icon = isLight ? '☀️' : '🌙';
+            const label = isLight ? 'Light mode' : 'Dark mode';
+
+            document.querySelectorAll('.theme-toggle').forEach(button => {
+                button.innerHTML = `<span>${icon}</span><span>${label}</span>`;
+            });
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('tweets_theme') || 'dark';
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+            } else {
+                document.body.classList.remove('light-mode');
+            }
+            updateThemeUI();
+        }
+
+        function toggleTheme() {
+            const isLight = document.body.classList.toggle('light-mode');
+            const newTheme = isLight ? 'light' : 'dark';
+            localStorage.setItem('tweets_theme', newTheme);
+            updateThemeUI();
+        }
+
+        function setupEventListeners() {
+            document.getElementById('loginForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                loginUser();
+            });
+
+            document.getElementById('composeForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                postFromModal();
+            });
+
+            document.getElementById('messageForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                sendMessage();
+            });
+
+            document.getElementById('composeTweet').addEventListener('input', (e) => {
+                document.getElementById('charCount').textContent = e.target.value.length;
+            });
+
+            document.getElementById('tweetInput').addEventListener('input', (e) => {
+                document.getElementById('charCount2').textContent = e.target.value.length;
+            });
+        }
+
+        function loginUser() {
+            const name = document.getElementById('nameInput').value;
+            const email = document.getElementById('emailInput').value;
+            const bio = document.getElementById('bioInput').value;
+
+            currentUser = {
+                id: Date.now(),
+                name,
+                email,
+                bio,
+                avatar: name.charAt(0).toUpperCase(),
+                profilePicture: pendingProfilePicture,
+                location: 'Remote',
+                joined: 'Joined recently',
+                cover: 'linear-gradient(135deg, #1d9bf0, #7c3aed)',
+                followers: Math.floor(Math.random() * 10000),
+                following: Math.floor(Math.random() * 5000),
+                following_list: [],
+                posts: [{
+                    id: Date.now() + 1,
+                    text: `Just joined Tweets and I'm excited to connect with everyone.`,
+                    timestamp: new Date(),
+                    likes: 0,
+                    replies: 0,
+                    retweets: 0
+                }]
+            };
+
+            pendingProfilePicture = null;
+            document.getElementById('signInPictureInput').value = '';
+            document.getElementById('signInPicturePreview').style.display = 'none';
+            saveState();
+            generateRandomUsers();
+            generateSampleTweets();
+            document.getElementById('loginModal').classList.remove('active');
+            showMainApp();
+        }
+
+        function showMainApp() {
+            document.getElementById('mainContainer').style.display = 'grid';
+            updateUserUI();
+            renderFeed();
+            renderTrends();
+        }
+
+        function updateUserUI() {
+            const avatar = document.getElementById('userAvatar');
+            if (currentUser && currentUser.profilePicture) {
+                avatar.innerHTML = `<img src="${currentUser.profilePicture}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+                avatar.style.background = 'transparent';
+                avatar.classList.add('image');
+            } else if (currentUser) {
+                avatar.textContent = currentUser.avatar;
+                avatar.style.background = 'var(--primary)';
+                avatar.classList.remove('image');
+            }
+        }
+
+        function createProfilePicture(name, seed) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 200;
+            canvas.height = 200;
+            const ctx = canvas.getContext('2d');
+            const colors = ['#1d9bf0', '#7c3aed', '#0f766e', '#dc2626', '#ea580c', '#9333ea'];
+            const colorA = colors[seed % colors.length];
+            const colorB = colors[(seed + 3) % colors.length];
+            const gradient = ctx.createLinearGradient(0, 0, 200, 200);
+            gradient.addColorStop(0, colorA);
+            gradient.addColorStop(1, colorB);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 200, 200);
+            ctx.fillStyle = 'rgba(255,255,255,0.95)';
+            ctx.font = 'bold 84px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(name.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase(), 100, 105);
+            return canvas.toDataURL('image/png');
+        }
+
+        function createProfilePost(name, role, index) {
+            const messages = [
+                `${name} is building something cool and sharing the journey.`,
+                `Always curious about better ways to solve product problems.`,
+                `${role} by day, builder by night.`,
+                `Shipping thoughtful experiences and learning every step of the way.`
+            ];
+            return {
+                id: Date.now() + index + 1000,
+                text: messages[index % messages.length],
+                timestamp: new Date(Date.now() - (index + 1) * 3600000),
+                likes: Math.floor(Math.random() * 500),
+                replies: Math.floor(Math.random() * 80),
+                retweets: Math.floor(Math.random() * 100)
+            };
+        }
+
+        function generateRandomUsers() {
+            const firstNames = ['Alex', 'Jordan', 'Casey', 'Morgan', 'Sam', 'Taylor', 'Riley', 'Jamie', 'Cameron', 'Drew'];
+            const lastNames = ['Chen', 'Smith', 'Johnson', 'Williams', 'Brown', 'Davis', 'Garcia', 'Rodriguez', 'Lee', 'Wilson'];
+            const roles = ['Developer', 'Designer', 'Product Manager', 'Data Scientist', 'DevOps Engineer', 'UI/UX Designer', 'Full Stack Dev', 'Startup Founder'];
+            const locations = ['Cape Town', 'London', 'Toronto', 'Berlin', 'Austin', 'New York', 'Chicago', 'Sydney'];
+
+            for (let i = 0; i < 12; i++) {
+                const name = firstNames[Math.floor(Math.random() * firstNames.length)] + ' ' + lastNames[Math.floor(Math.random() * lastNames.length)];
+                const role = roles[Math.floor(Math.random() * roles.length)];
+                const profilePicture = createProfilePicture(name, i);
+                users.push({
+                    id: Date.now() + i,
+                    name,
+                    avatar: name.split(' ')[0].charAt(0) + name.split(' ')[1].charAt(0),
+                    role,
+                    followers: Math.floor(Math.random() * 50000),
+                    following: Math.floor(Math.random() * 10000),
+                    bio: `${role} | Passionate about tech`,
+                    location: locations[i % locations.length],
+                    joined: `Joined ${['January', 'March', 'May', 'July', 'September', 'November'][i % 6]} ${2020 + (i % 5)}`,
+                    profilePicture,
+                    cover: `linear-gradient(135deg, ${['#1d9bf0','#7c3aed','#0f766e','#dc2626','#ea580c'][i % 5]}, #111827)`,
+                    posts: Array.from({ length: 2 + (i % 2) }, (_, postIndex) => createProfilePost(name, role, i + postIndex))
+                });
+            }
+            saveState();
+        }
+
+        function generateSampleTweets() {
+            const sampleTweets = [
+                { author: 'Alex Chen', text: 'Just launched my new project! Excited to share more soon 🚀' },
+                { author: 'Jordan Smith', text: 'CSS Grid is a game changer. Why did I wait so long to master it? 😅' },
+                { author: 'Casey Lee', text: 'The best code is the code that\'s easy to understand. Clean code matters.' },
+                { author: 'Morgan Brown', text: 'Building products that users love > everything else' },
+                { author: 'Sam Wilson', text: 'Open source has changed my career. So grateful for this community ❤️' }
+            ];
+
+            sampleTweets.forEach((tweet, index) => {
+                const authorUser = users.find(u => u.name === tweet.author) || currentUser;
+                tweets.push({
+                    id: Date.now() + Math.random(),
+                    author: tweet.author,
+                    authorId: authorUser ? authorUser.id : currentUser.id,
+                    text: tweet.text,
+                    timestamp: new Date(Date.now() - Math.random() * 86400000),
+                    likes: Math.floor(Math.random() * 5000),
+                    liked: false,
+                    retweets: Math.floor(Math.random() * 2000),
+                    replies: Math.floor(Math.random() * 500)
+                });
+            });
+            saveState();
+        }
+
+        function postTweet(e) {
+            e.preventDefault();
+            const text = document.getElementById('tweetInput').value.trim();
+            if (!text) return;
+
+            const newPost = {
+                id: Date.now(),
+                author: currentUser.name,
+                authorId: currentUser.id,
+                text,
+                timestamp: new Date(),
+                likes: 0,
+                liked: false,
+                retweets: 0,
+                replies: 0
+            };
+
+            tweets.unshift(newPost);
+            currentUser.posts = currentUser.posts || [];
+            currentUser.posts.unshift({
+                id: Date.now() + 100,
+                text,
+                timestamp: new Date(),
+                likes: 0,
+                replies: 0,
+                retweets: 0
+            });
+
+            document.getElementById('tweetInput').value = '';
+            document.getElementById('charCount2').textContent = '0';
+            saveState();
+            renderFeed();
+            if (!selectedProfileUserId || String(selectedProfileUserId) === String(currentUser.id)) {
+                renderProfile(currentUser.id);
+            }
+        }
+
+        function postFromModal() {
+            const text = document.getElementById('composeTweet').value.trim();
+            if (!text) return;
+
+            const newPost = {
+                id: Date.now(),
+                author: currentUser.name,
+                authorId: currentUser.id,
+                text,
+                timestamp: new Date(),
+                likes: 0,
+                liked: false,
+                retweets: 0,
+                replies: 0
+            };
+
+            tweets.unshift(newPost);
+            currentUser.posts = currentUser.posts || [];
+            currentUser.posts.unshift({
+                id: Date.now() + 200,
+                text,
+                timestamp: new Date(),
+                likes: 0,
+                replies: 0,
+                retweets: 0
+            });
+
+            document.getElementById('composeTweet').value = '';
+            document.getElementById('charCount').textContent = '0';
+            closeModal('composeModal');
+            saveState();
+            renderFeed();
+            if (!selectedProfileUserId || String(selectedProfileUserId) === String(currentUser.id)) {
+                renderProfile(currentUser.id);
+            }
+        }
+
+        function getUserById(userId) {
+            if (!userId) return null;
+            const id = String(userId);
+            return users.find(u => String(u.id) === id) || (currentUser && String(currentUser.id) === id ? currentUser : null);
+        }
+
+        function getProfileTweets(user) {
+            const list = [
+                ...(user.posts || []),
+                ...tweets.filter(t => String(t.authorId) === String(user.id) || t.author === user.name)
+            ];
+            const unique = new Map();
+            list.forEach(item => unique.set(String(item.id), item));
+            return Array.from(unique.values()).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        }
+
+        function renderFeed() {
+            const feed = document.getElementById('feedPosts');
+            feed.innerHTML = tweets.map(tweet => {
+                const author = getUserById(tweet.authorId) || getUserById(tweet.author) || { name: tweet.author, avatar: tweet.author.charAt(0), profilePicture: null };
+                const avatarMarkup = author.profilePicture
+                    ? `<img src="${author.profilePicture}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`
+                    : author.avatar;
+                return `
+                    <div class="post">
+                        <div class="avatar" style="width: 48px; height: 48px; font-size: 18px;">${avatarMarkup}</div>
+                        <div class="post-content">
+                            <div class="post-header">
+                                <span class="post-author" onclick="viewUserProfile('${author.id || ''}')" style="cursor: pointer;">${author.name || tweet.author}</span>
+                                <span class="post-handle">@${(author.name || tweet.author).toLowerCase().replace(/\s+/g, '')}</span>
+                                <span class="post-time">${formatTime(tweet.timestamp)}</span>
+                            </div>
+                            <div class="post-text">${escapeHtml(tweet.text)}</div>
+                            <div class="post-actions">
+                                <button class="action-btn" onclick="toggleLike(${tweet.id})">
+                                    ${tweet.liked ? '❤️' : '🤍'} ${tweet.likes}
+                                </button>
+                                <button class="action-btn">💬 ${tweet.replies}</button>
+                                <button class="action-btn">🔄 ${tweet.retweets}</button>
+                                <button class="action-btn" onclick="toggleBookmark(${tweet.id})">🔖</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleLike(id) {
+            const tweet = tweets.find(t => t.id === id);
+            if (tweet) {
+                tweet.liked = !tweet.liked;
+                tweet.likes += tweet.liked ? 1 : -1;
+                saveState();
+                renderFeed();
+            }
+        }
+
+        function toggleBookmark(id) {
+            const tweet = tweets.find(t => t.id === id);
+            if (tweet) {
+                const idx = bookmarks.indexOf(id);
+                if (idx > -1) {
+                    bookmarks.splice(idx, 1);
+                } else {
+                    bookmarks.push(id);
+                }
+                saveState();
+            }
+        }
+
+        function switchPage(page) {
+            currentPage = page;
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            const clickedEl = window.event && window.event.target ? window.event.target : null;
+            const navItem = clickedEl && clickedEl.closest('.nav-item') ? clickedEl.closest('.nav-item') : document.querySelector(`.nav-item[data-page="${page}"]`);
+            if (navItem) navItem.classList.add('active');
+
+            if (page === 'profile') {
+                const isProfileNavClick = navItem && navItem.getAttribute('data-page') === 'profile';
+                if (isProfileNavClick || !selectedProfileUserId) {
+                    selectedProfileUserId = currentUser.id;
+                }
+            }
+
+            switch(page) {
+                case 'home':
+                    document.getElementById('homePage').classList.add('active');
+                    renderFeed();
+                    break;
+                case 'explore':
+                    document.getElementById('explorePage').classList.add('active');
+                    renderExplore();
+                    break;
+                case 'messages':
+                    document.getElementById('messagesPage').classList.add('active');
+                    renderMessages();
+                    break;
+                case 'bookmarks':
+                    document.getElementById('bookmarksPage').classList.add('active');
+                    renderBookmarks();
+                    break;
+                case 'profile':
+                    document.getElementById('profilePage').classList.add('active');
+                    renderProfile();
+                    break;
+            }
+        }
+
+        function renderExplore() {
+            const container = document.getElementById('exploreUsers');
+            container.innerHTML = users.map(user => {
+                const isFollowing = currentUser.following_list.includes(String(user.id));
+                const avatarMarkup = user.profilePicture
+                    ? `<img src="${user.profilePicture}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`
+                    : user.avatar;
+                return `
+                    <div class="user-card">
+                        <div class="avatar" style="width: 48px; height: 48px; font-size: 18px;">${avatarMarkup}</div>
+                        <div class="user-info">
+                            <div class="user-name" onclick="viewUserProfile('${user.id}')">${user.name}</div>
+                            <div class="user-handle">@${user.name.toLowerCase().replace(/\s+/g, '')}</div>
+                            <div class="user-bio">${user.bio}</div>
+                            <div class="profile-meta">📍 ${user.location} • Joined ${user.joined}</div>
+                        </div>
+                        <button class="follow-btn ${isFollowing ? 'following' : ''}" onclick="toggleFollow('${user.id}')">
+                            ${isFollowing ? 'Following' : 'Follow'}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleFollow(userId) {
+            const user = getUserById(userId);
+            if (!user || String(user.id) === String(currentUser.id)) return;
+
+            const normalizedId = String(user.id);
+            const idx = currentUser.following_list.indexOf(normalizedId);
+            if (idx > -1) {
+                currentUser.following_list.splice(idx, 1);
+                user.followers = Math.max(0, user.followers - 1);
+            } else {
+                currentUser.following_list.push(normalizedId);
+                user.followers += 1;
+            }
+            saveState();
+            renderExplore();
+            if (selectedProfileUserId && String(selectedProfileUserId) === normalizedId) {
+                renderProfile(normalizedId);
+            }
+        }
+
+        function renderMessages() {
+            const container = document.getElementById('conversationsList');
+            const convs = Object.keys(messages).map(key => ({
+                id: key,
+                name: key,
+                lastMessage: messages[key][messages[key].length - 1]?.text || ''
+            }));
+
+            container.innerHTML = convs.length === 0 
+                ? '<div class="empty-state">No messages yet</div>'
+                : convs.map(conv => `
+                    <div class="conversation" onclick="selectConversation('${conv.id}')">
+                        <div style="font-weight: 700;">${conv.name}</div>
+                        <div style="color: var(--text-muted); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${conv.lastMessage}</div>
+                    </div>
+                `).join('');
+
+            if (selectedConversation) {
+                renderMessageThread();
+            }
+        }
+
+        function selectConversation(name) {
+            selectedConversation = name;
+            renderMessageThread();
+        }
+
+        function renderMessageThread() {
+            const thread = document.getElementById('messageThread');
+            const msgs = messages[selectedConversation] || [];
+
+            thread.innerHTML = `
+                <div class="messages-header">${selectedConversation}</div>
+                <div class="messages-area">
+                    ${msgs.map(msg => `
+                        <div class="message ${msg.sent ? 'sent' : ''}">
+                            <div class="message-bubble">${msg.text}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="message-input">
+                    <textarea placeholder="Type a message..." id="threadMessageInput" style="border: 1px solid var(--border); background: var(--card-bg); border-radius: 8px; padding: 8px; flex: 1;"></textarea>
+                    <button class="message-send-btn" onclick="sendThreadMessage()">Send</button>
+                </div>
+            `;
+        }
+
+        function sendThreadMessage() {
+            const input = document.getElementById('threadMessageInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            if (!messages[selectedConversation]) {
+                messages[selectedConversation] = [];
+            }
+
+            messages[selectedConversation].push({
+                text,
+                sent: true,
+                timestamp: new Date()
+            });
+
+            input.value = '';
+            saveState();
+            renderMessageThread();
+        }
+
+        function sendMessage() {
+            const recipient = document.getElementById('messageRecipient').value.trim();
+            const text = document.getElementById('messageText').value.trim();
+
+            if (!recipient || !text) return;
+
+            if (!messages[recipient]) {
+                messages[recipient] = [];
+            }
+
+            messages[recipient].push({
+                text,
+                sent: true,
+                timestamp: new Date()
+            });
+
+            document.getElementById('messageRecipient').value = '';
+            document.getElementById('messageText').value = '';
+            closeModal('messageModal');
+            saveState();
+        }
+
+        function renderBookmarks() {
+            const container = document.getElementById('bookmarksPosts');
+            const bookmarkedTweets = tweets.filter(t => bookmarks.includes(t.id));
+
+            container.innerHTML = bookmarkedTweets.length === 0
+                ? '<div class="empty-state"><div class="empty-icon">🔖</div>No bookmarked tweets yet</div>'
+                : bookmarkedTweets.map(tweet => `
+                    <div class="post">
+                        <div class="avatar" style="width: 48px; height: 48px; font-size: 18px;">${tweet.author.charAt(0)}</div>
+                        <div class="post-content">
+                            <div class="post-header">
+                                <span class="post-author">${tweet.author}</span>
+                                <span class="post-handle">@${tweet.author.toLowerCase().replace(/\s+/g, '')}</span>
+                                <span class="post-time">${formatTime(tweet.timestamp)}</span>
+                            </div>
+                            <div class="post-text">${escapeHtml(tweet.text)}</div>
+                        </div>
+                    </div>
+                `).join('');
+        }
+
+        function renderProfile(userId = selectedProfileUserId || currentUser.id) {
+            const container = document.getElementById('profileContent');
+            const targetUser = getUserById(userId) || currentUser;
+            const isOwnProfile = String(targetUser.id) === String(currentUser.id);
+            const profileTweets = getProfileTweets(targetUser);
+            const isFollowing = currentUser.following_list.includes(String(targetUser.id));
+            const displayName = targetUser.name || currentUser.name;
+            const avatarHtml = targetUser.profilePicture
+                ? `<img src="${targetUser.profilePicture}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`
+                : targetUser.avatar;
+
+            container.innerHTML = `
+                <div class="profile-content-card">
+                    <div class="profile-banner" style="background: ${targetUser.cover || 'linear-gradient(135deg, var(--primary), #7c3aed)'}"></div>
+                    <div class="profile-header">
+                        <div class="profile-avatar-container">
+                            <div class="profile-avatar${isOwnProfile ? '' : ''}" ${isOwnProfile ? `onclick="document.getElementById('profilePictureInput').click()"` : ''}>
+                                ${avatarHtml}
+                            </div>
+                            ${isOwnProfile ? `<div class="profile-avatar-upload-hint" onclick="document.getElementById('profilePictureInput').click()" title="Upload profile picture">📷</div>` : ''}
+                            ${isOwnProfile ? `<input type="file" id="profilePictureInput" class="profile-picture-upload" accept="image/*" onchange="handleProfilePictureUpload(event)">` : ''}
+                        </div>
+                        <div class="profile-name">${displayName}</div>
+                        <div class="profile-meta">@${displayName.toLowerCase().replace(/\s+/g, '')} • ${targetUser.role || 'Member'}</div>
+                        ${targetUser.bio ? `<div class="profile-bio">${targetUser.bio}</div>` : ''}
+                        <div class="profile-meta">📍 ${targetUser.location || 'Remote'} • 📅 ${targetUser.joined || 'Joined recently'}</div>
+                        <div class="profile-badges">
+                            <span class="profile-badge">${targetUser.following || 0} Following</span>
+                            <span class="profile-badge">${targetUser.followers || 0} Followers</span>
+                        </div>
+                        <div class="profile-action-row">
+                            ${isOwnProfile ? '' : `<button class="follow-btn ${isFollowing ? 'following' : ''}" onclick="toggleFollow('${targetUser.id}')">${isFollowing ? 'Following' : 'Follow'}</button>`}
+                        </div>
+                        <div class="profile-stats">
+                            <div class="stat">
+                                <div class="stat-value">${profileTweets.length}</div>
+                                <div>Tweets</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">${targetUser.following || 0}</div>
+                                <div>Following</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">${targetUser.followers || 0}</div>
+                                <div>Followers</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="posts">
+                        ${profileTweets.length === 0
+                            ? '<div class="empty-state">No tweets yet</div>'
+                            : profileTweets.map(tweet => `
+                                <div class="post">
+                                    <div class="avatar" style="width: 48px; height: 48px; font-size: 18px;">${targetUser.profilePicture ? `<img src="${targetUser.profilePicture}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : targetUser.avatar}</div>
+                                    <div class="post-content">
+                                        <div class="post-header">
+                                            <span class="post-author">${displayName}</span>
+                                            <span class="post-time">${formatTime(tweet.timestamp)}</span>
+                                        </div>
+                                        <div class="post-text">${escapeHtml(tweet.text)}</div>
+                                        <div class="post-actions">
+                                            <button class="action-btn">🤍 ${tweet.likes}</button>
+                                            <button class="action-btn">💬 ${tweet.replies}</button>
+                                            <button class="action-btn">🔄 ${tweet.retweets}</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')
+                        }
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderTrends() {
+            const container = document.getElementById('trendsList');
+            const trends = [
+                { name: '#JavaScript', count: '245K' },
+                { name: '#WebDevelopment', count: '189K' },
+                { name: '#React', count: '156K' },
+                { name: '#TechNews', count: '432K' },
+                { name: '#Startups', count: '298K' }
+            ];
+
+            container.innerHTML = trends.map(trend => `
+                <div class="trend">
+                    <div class="trend-category">Trending Worldwide</div>
+                    <div class="trend-name">${trend.name}</div>
+                    <div class="trend-count">${trend.count} posts</div>
+                </div>
+            `).join('');
+        }
+
+        function getAISuggestion() {
+            const suggestion = aiSuggestions[Math.floor(Math.random() * aiSuggestions.length)];
+            const textarea = document.getElementById('composeTweet') || document.getElementById('tweetInput');
+            textarea.value = suggestion;
+            textarea.dispatchEvent(new Event('input'));
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        function viewUserProfile(userId) {
+            selectedProfileUserId = userId;
+            switchPage('profile');
+        }
+
+        function handleSignInProfilePictureUpload(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                pendingProfilePicture = null;
+                document.getElementById('signInPicturePreview').style.display = 'none';
+                return;
+            }
+
+            if (!file.type.startsWith('image/')) {
+                alert('Please upload an image file');
+                return;
+            }
+
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File size must be less than 5MB');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                pendingProfilePicture = e.target.result;
+                const preview = document.getElementById('signInPicturePreview');
+                const previewImage = document.getElementById('signInPicturePreviewImage');
+                previewImage.src = pendingProfilePicture;
+                preview.style.display = 'flex';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleProfilePictureUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Check file type
+            if (!file.type.startsWith('image/')) {
+                alert('Please upload an image file');
+                return;
+            }
+
+            // Check file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File size must be less than 5MB');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentUser.profilePicture = e.target.result;
+                saveState();
+                updateUserUI();
+                renderProfile();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function logout() {
+            if (confirm('Are you sure?')) {
+                currentUser = null;
+                users = [];
+                tweets = [];
+                bookmarks = [];
+                messages = {};
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        function formatTime(date) {
+            const now = new Date();
+            const diff = now - new Date(date);
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+
+            if (minutes < 1) return 'now';
+            if (minutes < 60) return `${minutes}m`;
+            if (hours < 24) return `${hours}h`;
+            if (days < 7) return `${days}d`;
+            return new Date(date).toLocaleDateString();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function saveState() {
+            localStorage.setItem('tweets_user', JSON.stringify(currentUser));
+            localStorage.setItem('tweets_tweets', JSON.stringify(tweets));
+            localStorage.setItem('tweets_users', JSON.stringify(users));
+            localStorage.setItem('tweets_bookmarks', JSON.stringify(bookmarks));
+            localStorage.setItem('tweets_messages', JSON.stringify(messages));
+        }
+
+        function loadState() {
+            currentUser = JSON.parse(localStorage.getItem('tweets_user') || 'null');
+            tweets = JSON.parse(localStorage.getItem('tweets_tweets') || '[]');
+            users = JSON.parse(localStorage.getItem('tweets_users') || '[]');
+            bookmarks = JSON.parse(localStorage.getItem('tweets_bookmarks') || '[]');
+            messages = JSON.parse(localStorage.getItem('tweets_messages') || '{}');
+        }
+
+        // Start
+        init();
+    </script>
+</body>
 </html>
