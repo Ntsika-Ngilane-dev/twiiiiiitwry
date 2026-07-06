@@ -360,6 +360,58 @@
             color: #f4245e;
         }
 
+        .action-btn.reposted {
+            color: #17bf63;
+        }
+
+        .comment-panel {
+            margin-top: 10px;
+            padding: 10px 0 0;
+            border-top: 1px solid var(--border);
+        }
+
+        .comment-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .comment-item {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 8px 10px;
+            font-size: 14px;
+        }
+
+        .comment-form {
+            display: flex;
+            gap: 8px;
+        }
+
+        .comment-input {
+            flex: 1;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 8px 12px;
+            background: transparent;
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        .comment-submit {
+            border: none;
+            border-radius: 999px;
+            padding: 8px 12px;
+            background: var(--primary);
+            color: white;
+            cursor: pointer;
+        }
+
+        .trend.active {
+            background: rgba(29, 155, 240, 0.12);
+        }
+
         /* Right Sidebar */
         .right-sidebar {
             padding: 16px;
@@ -845,7 +897,7 @@
                         <span style="color: var(--text-muted); font-size: 14px;">Profile picture ready</span>
                     </div>
                 </div>
-                <button type="submit" class="post-btn" style="width: 100%; padding: 12px;">Sign In</button>
+                <button id="signInButton" type="submit" class="post-btn" style="width: 100%; padding: 12px;">Sign In</button>
             </form>
         </div>
     </div>
@@ -1017,6 +1069,7 @@
         let selectedConversation = null;
         let selectedProfileUserId = null;
         let pendingProfilePicture = null;
+        let liveNewsCache = {};
 
         // Init
         function init() {
@@ -1058,10 +1111,13 @@
         }
 
         function setupEventListeners() {
-            document.getElementById('loginForm').addEventListener('submit', (e) => {
-                e.preventDefault();
-                loginUser();
-            });
+            const loginForm = document.getElementById('loginForm');
+
+            if (loginForm) {
+                loginForm.addEventListener('submit', (e) => {
+                    handleLoginSubmit(e);
+                });
+            }
 
             document.getElementById('composeForm').addEventListener('submit', (e) => {
                 e.preventDefault();
@@ -1082,18 +1138,28 @@
             });
         }
 
-        function loginUser() {
-            const name = document.getElementById('nameInput').value;
-            const email = document.getElementById('emailInput').value;
-            const bio = document.getElementById('bioInput').value;
+        function handleLoginSubmit(e) {
+            if (e) e.preventDefault();
+            const name = document.getElementById('nameInput').value.trim();
+            const email = document.getElementById('emailInput').value.trim();
+            const bio = document.getElementById('bioInput').value.trim();
 
+            if (!name || !email) {
+                alert('Please enter your name and email to sign in.');
+                return;
+            }
+
+            loginUser(name, email, bio);
+        }
+
+        function loginUser(name = document.getElementById('nameInput').value.trim(), email = document.getElementById('emailInput').value.trim(), bio = document.getElementById('bioInput').value.trim()) {
             currentUser = {
                 id: Date.now(),
                 name,
                 email,
                 bio,
                 avatar: name.charAt(0).toUpperCase(),
-                profilePicture: pendingProfilePicture,
+                profilePicture: pendingProfilePicture || null,
                 location: 'Remote',
                 joined: 'Joined recently',
                 cover: 'linear-gradient(135deg, #1d9bf0, #7c3aed)',
@@ -1110,25 +1176,53 @@
                 }]
             };
 
+            ensureProfilePicture(currentUser, Number(currentUser.id));
             pendingProfilePicture = null;
-            document.getElementById('signInPictureInput').value = '';
-            document.getElementById('signInPicturePreview').style.display = 'none';
+            const signInPictureInput = document.getElementById('signInPictureInput');
+            const signInPreview = document.getElementById('signInPicturePreview');
+            if (signInPictureInput) signInPictureInput.value = '';
+            if (signInPreview) signInPreview.style.display = 'none';
             saveState();
             generateRandomUsers();
             generateSampleTweets();
-            document.getElementById('loginModal').classList.remove('active');
+            const loginModal = document.getElementById('loginModal');
+            if (loginModal) {
+                loginModal.classList.remove('active');
+                loginModal.style.display = 'none';
+            }
             showMainApp();
         }
 
         function showMainApp() {
-            document.getElementById('mainContainer').style.display = 'grid';
+            const mainContainer = document.getElementById('mainContainer');
+            const loginModal = document.getElementById('loginModal');
+            if (mainContainer) mainContainer.style.display = 'grid';
+            if (loginModal) {
+                loginModal.classList.remove('active');
+                loginModal.style.display = 'none';
+            }
             updateUserUI();
             renderFeed();
             renderTrends();
         }
 
+        function ensureProfilePicture(user, seed = 0) {
+            if (!user) return user;
+            if (!user.avatar) {
+                const initials = (user.name || 'User').split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase();
+                user.avatar = initials || 'U';
+            }
+            if (!user.profilePicture) {
+                user.profilePicture = createProfilePicture(user.name || 'User', seed || Number(user.id || Date.now()));
+            }
+            return user;
+        }
+
         function updateUserUI() {
             const avatar = document.getElementById('userAvatar');
+            if (currentUser) {
+                ensureProfilePicture(currentUser, Number(currentUser.id || Date.now()));
+            }
             if (currentUser && currentUser.profilePicture) {
                 avatar.innerHTML = `<img src="${currentUser.profilePicture}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
                 avatar.style.background = 'transparent';
@@ -1166,7 +1260,9 @@
                 `${name} is building something cool and sharing the journey.`,
                 `Always curious about better ways to solve product problems.`,
                 `${role} by day, builder by night.`,
-                `Shipping thoughtful experiences and learning every step of the way.`
+                `Shipping thoughtful experiences and learning every step of the way.`,
+                `A small experiment today turned into a useful insight for the team.`,
+                `Reminder that consistency beats intensity when you are creating something meaningful.`
             ];
             return {
                 id: Date.now() + index + 1000,
@@ -1179,29 +1275,44 @@
         }
 
         function generateRandomUsers() {
-            const firstNames = ['Alex', 'Jordan', 'Casey', 'Morgan', 'Sam', 'Taylor', 'Riley', 'Jamie', 'Cameron', 'Drew'];
-            const lastNames = ['Chen', 'Smith', 'Johnson', 'Williams', 'Brown', 'Davis', 'Garcia', 'Rodriguez', 'Lee', 'Wilson'];
-            const roles = ['Developer', 'Designer', 'Product Manager', 'Data Scientist', 'DevOps Engineer', 'UI/UX Designer', 'Full Stack Dev', 'Startup Founder'];
-            const locations = ['Cape Town', 'London', 'Toronto', 'Berlin', 'Austin', 'New York', 'Chicago', 'Sydney'];
+            const firstNames = ['Alex', 'Jordan', 'Casey', 'Morgan', 'Sam', 'Taylor', 'Riley', 'Jamie', 'Cameron', 'Drew', 'Avery', 'Quinn', 'Kai', 'Blake', 'Parker', 'Finley', 'Rowan', 'Skyler', 'Harper', 'Logan', 'Emerson', 'Sage', 'Dakota', 'Reese', 'Milan', 'Ari', 'Noah', 'Mia', 'Liam', 'Zoe'];
+            const lastNames = ['Chen', 'Smith', 'Johnson', 'Williams', 'Brown', 'Davis', 'Garcia', 'Rodriguez', 'Lee', 'Wilson', 'Patel', 'Nguyen', 'Kim', 'Martinez', 'Taylor', 'Anderson', 'Thomas', 'Moore', 'Jackson', 'White', 'Harris', 'Clark'];
+            const roles = ['Developer', 'Designer', 'Product Manager', 'Data Scientist', 'DevOps Engineer', 'UI/UX Designer', 'Full Stack Dev', 'Startup Founder', 'Growth Marketer', 'Community Lead'];
+            const locations = ['Cape Town', 'London', 'Toronto', 'Berlin', 'Austin', 'New York', 'Chicago', 'Sydney', 'Seattle', 'Paris'];
+            const headlines = ['Building calm, useful products', 'Designing for real people', 'Making complex ideas feel simple', 'Shipping fast and learning faster', 'Creating thoughtful digital experiences'];
+            const interests = [
+                ['AI', 'Design Systems', 'Startups'],
+                ['Typography', 'Product Strategy', 'Coffee'],
+                ['Data', 'Python', 'Community'],
+                ['DevOps', 'Open Source', 'Mentorship'],
+                ['Growth', 'Creator Tools', 'Storytelling']
+            ];
 
-            for (let i = 0; i < 12; i++) {
+            for (let i = 0; i < 30; i++) {
                 const name = firstNames[Math.floor(Math.random() * firstNames.length)] + ' ' + lastNames[Math.floor(Math.random() * lastNames.length)];
                 const role = roles[Math.floor(Math.random() * roles.length)];
-                const profilePicture = createProfilePicture(name, i);
-                users.push({
+                const headline = headlines[i % headlines.length];
+                const skillSet = interests[i % interests.length];
+                const mockUser = {
                     id: Date.now() + i,
                     name,
                     avatar: name.split(' ')[0].charAt(0) + name.split(' ')[1].charAt(0),
                     role,
                     followers: Math.floor(Math.random() * 50000),
                     following: Math.floor(Math.random() * 10000),
-                    bio: `${role} | Passionate about tech`,
+                    bio: `${role} • ${headline}`,
+                    headline,
+                    website: `https://example.com/${name.toLowerCase().replace(/\s+/g, '')}`,
+                    interests: skillSet,
+                    highlights: ['Active this week', 'Loves thoughtful feedback', 'Often shares useful notes'],
                     location: locations[i % locations.length],
                     joined: `Joined ${['January', 'March', 'May', 'July', 'September', 'November'][i % 6]} ${2020 + (i % 5)}`,
-                    profilePicture,
+                    profilePicture: null,
                     cover: `linear-gradient(135deg, ${['#1d9bf0','#7c3aed','#0f766e','#dc2626','#ea580c'][i % 5]}, #111827)`,
-                    posts: Array.from({ length: 2 + (i % 2) }, (_, postIndex) => createProfilePost(name, role, i + postIndex))
-                });
+                    posts: Array.from({ length: 2 + (i % 3) }, (_, postIndex) => createProfilePost(name, role, i + postIndex))
+                };
+                ensureProfilePicture(mockUser, i);
+                users.push(mockUser);
             }
             saveState();
         }
@@ -1212,21 +1323,37 @@
                 { author: 'Jordan Smith', text: 'CSS Grid is a game changer. Why did I wait so long to master it? 😅' },
                 { author: 'Casey Lee', text: 'The best code is the code that\'s easy to understand. Clean code matters.' },
                 { author: 'Morgan Brown', text: 'Building products that users love > everything else' },
-                { author: 'Sam Wilson', text: 'Open source has changed my career. So grateful for this community ❤️' }
+                { author: 'Sam Wilson', text: 'Open source has changed my career. So grateful for this community ❤️' },
+                { author: 'Taylor Davis', text: 'Small UX fixes can make a huge difference when people are stressed and trying to finish a task.' },
+                { author: 'Riley Garcia', text: 'Designing for clarity is easier when you listen closely to the people using the product.' },
+                { author: 'Jamie Nguyen', text: 'I keep a tiny notebook of weird ideas. Some of them become the best features later.' },
+                { author: 'Blake Turner', text: 'The most satisfying part of shipping is seeing people actually enjoy the experience.' },
+                { author: 'Harper Kim', text: 'I am learning that good systems are invisible until they stop working.' },
+                { author: 'Noah Patel', text: 'Current obsession: making onboarding feel less overwhelming and more welcoming.' },
+                { author: 'Mia Wilson', text: 'A simple progress bar can turn a frustrating flow into a confident one.' },
+                { author: 'Liam Martinez', text: 'A calm launch beats a chaotic one every single time.' },
+                { author: 'Zoe Taylor', text: 'Nothing beats a team that can laugh while they solve hard problems.' },
+                { author: 'Avery Moore', text: 'If you are building in public, people will surprise you with the most helpful feedback.' }
             ];
 
             sampleTweets.forEach((tweet, index) => {
-                const authorUser = users.find(u => u.name === tweet.author) || currentUser;
+                const authorUser = users.find(u => u.name === tweet.author) || users[index % users.length] || currentUser;
                 tweets.push({
-                    id: Date.now() + Math.random(),
+                    id: Date.now() + index + 1000,
                     author: tweet.author,
                     authorId: authorUser ? authorUser.id : currentUser.id,
                     text: tweet.text,
-                    timestamp: new Date(Date.now() - Math.random() * 86400000),
+                    timestamp: new Date(Date.now() - (index + 1) * 3600000),
                     likes: Math.floor(Math.random() * 5000),
                     liked: false,
+                    reposted: false,
                     retweets: Math.floor(Math.random() * 2000),
-                    replies: Math.floor(Math.random() * 500)
+                    replies: Math.floor(Math.random() * 500),
+                    comments: [
+                        { id: Date.now() + index + 1, author: 'Avery Patel', text: 'Love this energy.', timestamp: new Date() },
+                        { id: Date.now() + index + 2, author: 'Kai Nguyen', text: 'This is the kind of post we need more of.', timestamp: new Date() }
+                    ],
+                    showComments: false
                 });
             });
             saveState();
@@ -1245,8 +1372,11 @@
                 timestamp: new Date(),
                 likes: 0,
                 liked: false,
+                reposted: false,
                 retweets: 0,
-                replies: 0
+                replies: 0,
+                comments: [],
+                showComments: false
             };
 
             tweets.unshift(newPost);
@@ -1281,8 +1411,11 @@
                 timestamp: new Date(),
                 likes: 0,
                 liked: false,
+                reposted: false,
                 retweets: 0,
-                replies: 0
+                replies: 0,
+                comments: [],
+                showComments: false
             };
 
             tweets.unshift(newPost);
@@ -1309,7 +1442,11 @@
         function getUserById(userId) {
             if (!userId) return null;
             const id = String(userId);
-            return users.find(u => String(u.id) === id) || (currentUser && String(currentUser.id) === id ? currentUser : null);
+            const byId = users.find(u => String(u.id) === id);
+            if (byId) return byId;
+            const byName = users.find(u => u.name === id || u.name.toLowerCase().replace(/\s+/g, '') === id.toLowerCase().replace(/\s+/g, ''));
+            if (byName) return byName;
+            return currentUser && String(currentUser.id) === id ? currentUser : null;
         }
 
         function getProfileTweets(user) {
@@ -1322,6 +1459,44 @@
             return Array.from(unique.values()).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         }
 
+        function toggleComments(id) {
+            const tweet = tweets.find(t => t.id === id);
+            if (tweet) {
+                tweet.showComments = !tweet.showComments;
+                saveState();
+                renderFeed();
+            }
+        }
+
+        function submitComment(id) {
+            const tweet = tweets.find(t => t.id === id);
+            const input = document.querySelector(`[data-comment-input="${id}"]`);
+            const text = input && input.value.trim();
+            if (tweet && text) {
+                tweet.comments = tweet.comments || [];
+                tweet.comments.unshift({
+                    id: Date.now(),
+                    author: currentUser.name,
+                    text,
+                    timestamp: new Date()
+                });
+                tweet.replies = (tweet.replies || 0) + 1;
+                input.value = '';
+                saveState();
+                renderFeed();
+            }
+        }
+
+        function toggleRepost(id) {
+            const tweet = tweets.find(t => t.id === id);
+            if (tweet) {
+                tweet.reposted = !tweet.reposted;
+                tweet.retweets += tweet.reposted ? 1 : -1;
+                saveState();
+                renderFeed();
+            }
+        }
+
         function renderFeed() {
             const feed = document.getElementById('feedPosts');
             feed.innerHTML = tweets.map(tweet => {
@@ -1329,24 +1504,39 @@
                 const avatarMarkup = author.profilePicture
                     ? `<img src="${author.profilePicture}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`
                     : author.avatar;
+                const commentsMarkup = (tweet.comments || []).map(comment => `
+                    <div class="comment-item">
+                        <strong>${comment.author}</strong> <span style="color: var(--text-muted); font-size: 12px;">${formatTime(comment.timestamp)}</span>
+                        <div>${escapeHtml(comment.text)}</div>
+                    </div>
+                `).join('');
                 return `
                     <div class="post">
                         <div class="avatar" style="width: 48px; height: 48px; font-size: 18px;">${avatarMarkup}</div>
                         <div class="post-content">
                             <div class="post-header">
-                                <span class="post-author" onclick="viewUserProfile('${author.id || ''}')" style="cursor: pointer;">${author.name || tweet.author}</span>
+                                <span class="post-author" onclick="viewUserProfile(${JSON.stringify(String(author.id || author.name || tweet.author))})" style="cursor: pointer;">${author.name || tweet.author}</span>
                                 <span class="post-handle">@${(author.name || tweet.author).toLowerCase().replace(/\s+/g, '')}</span>
                                 <span class="post-time">${formatTime(tweet.timestamp)}</span>
                             </div>
                             <div class="post-text">${escapeHtml(tweet.text)}</div>
                             <div class="post-actions">
-                                <button class="action-btn" onclick="toggleLike(${tweet.id})">
+                                <button class="action-btn ${tweet.liked ? 'liked' : ''}" onclick="toggleLike(${tweet.id})">
                                     ${tweet.liked ? '❤️' : '🤍'} ${tweet.likes}
                                 </button>
-                                <button class="action-btn">💬 ${tweet.replies}</button>
-                                <button class="action-btn">🔄 ${tweet.retweets}</button>
+                                <button class="action-btn" onclick="toggleComments(${tweet.id})">💬 ${tweet.replies || 0}</button>
+                                <button class="action-btn ${tweet.reposted ? 'reposted' : ''}" onclick="toggleRepost(${tweet.id})">🔁 ${tweet.retweets || 0}</button>
                                 <button class="action-btn" onclick="toggleBookmark(${tweet.id})">🔖</button>
                             </div>
+                            ${tweet.showComments ? `
+                                <div class="comment-panel">
+                                    <div class="comment-list">${commentsMarkup}</div>
+                                    <div class="comment-form">
+                                        <input class="comment-input" data-comment-input="${tweet.id}" placeholder="Write a comment..." />
+                                        <button class="comment-submit" onclick="submitComment(${tweet.id})">Reply</button>
+                                    </div>
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
                 `;
@@ -1360,6 +1550,9 @@
                 tweet.likes += tweet.liked ? 1 : -1;
                 saveState();
                 renderFeed();
+                if (currentPage === 'profile') {
+                    renderProfile(selectedProfileUserId || currentUser.id);
+                }
             }
         }
 
@@ -1373,6 +1566,10 @@
                     bookmarks.push(id);
                 }
                 saveState();
+                if (currentPage === 'bookmarks') {
+                    renderBookmarks();
+                }
+                renderFeed();
             }
         }
 
@@ -1426,7 +1623,7 @@
                     <div class="user-card">
                         <div class="avatar" style="width: 48px; height: 48px; font-size: 18px;">${avatarMarkup}</div>
                         <div class="user-info">
-                            <div class="user-name" onclick="viewUserProfile('${user.id}')">${user.name}</div>
+                            <div class="user-name" onclick="viewUserProfile(${JSON.stringify(String(user.id))})">${user.name}</div>
                             <div class="user-handle">@${user.name.toLowerCase().replace(/\s+/g, '')}</div>
                             <div class="user-bio">${user.bio}</div>
                             <div class="profile-meta">📍 ${user.location} • Joined ${user.joined}</div>
@@ -1554,19 +1751,25 @@
 
             container.innerHTML = bookmarkedTweets.length === 0
                 ? '<div class="empty-state"><div class="empty-icon">🔖</div>No bookmarked tweets yet</div>'
-                : bookmarkedTweets.map(tweet => `
-                    <div class="post">
-                        <div class="avatar" style="width: 48px; height: 48px; font-size: 18px;">${tweet.author.charAt(0)}</div>
-                        <div class="post-content">
-                            <div class="post-header">
-                                <span class="post-author">${tweet.author}</span>
-                                <span class="post-handle">@${tweet.author.toLowerCase().replace(/\s+/g, '')}</span>
-                                <span class="post-time">${formatTime(tweet.timestamp)}</span>
+                : bookmarkedTweets.map(tweet => {
+                    const author = getUserById(tweet.authorId) || { name: tweet.author, avatar: tweet.author.charAt(0), profilePicture: null };
+                    const avatarMarkup = author.profilePicture
+                        ? `<img src="${author.profilePicture}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`
+                        : author.avatar;
+                    return `
+                        <div class="post">
+                            <div class="avatar" style="width: 48px; height: 48px; font-size: 18px;">${avatarMarkup}</div>
+                            <div class="post-content">
+                                <div class="post-header">
+                                    <span class="post-author" onclick="viewUserProfile(${JSON.stringify(String(author.id || author.name || tweet.author))})" style="cursor: pointer;">${author.name || tweet.author}</span>
+                                    <span class="post-handle">@${(author.name || tweet.author).toLowerCase().replace(/\s+/g, '')}</span>
+                                    <span class="post-time">${formatTime(tweet.timestamp)}</span>
+                                </div>
+                                <div class="post-text">${escapeHtml(tweet.text)}</div>
                             </div>
-                            <div class="post-text">${escapeHtml(tweet.text)}</div>
                         </div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
         }
 
         function renderProfile(userId = selectedProfileUserId || currentUser.id) {
@@ -1594,11 +1797,15 @@
                         <div class="profile-name">${displayName}</div>
                         <div class="profile-meta">@${displayName.toLowerCase().replace(/\s+/g, '')} • ${targetUser.role || 'Member'}</div>
                         ${targetUser.bio ? `<div class="profile-bio">${targetUser.bio}</div>` : ''}
+                        ${targetUser.headline ? `<div class="profile-meta" style="font-weight: 600; color: var(--text);">${targetUser.headline}</div>` : ''}
                         <div class="profile-meta">📍 ${targetUser.location || 'Remote'} • 📅 ${targetUser.joined || 'Joined recently'}</div>
                         <div class="profile-badges">
                             <span class="profile-badge">${targetUser.following || 0} Following</span>
                             <span class="profile-badge">${targetUser.followers || 0} Followers</span>
                         </div>
+                        ${targetUser.interests && targetUser.interests.length ? `<div class="profile-badges">${targetUser.interests.map(interest => `<span class="profile-badge">${interest}</span>`).join('')}</div>` : ''}
+                        ${targetUser.highlights && targetUser.highlights.length ? `<div class="profile-badges">${targetUser.highlights.map(highlight => `<span class="profile-badge">${highlight}</span>`).join('')}</div>` : ''}
+                        ${targetUser.website ? `<div class="profile-meta"><a href="${targetUser.website}" target="_blank" rel="noreferrer" style="color: var(--primary); text-decoration: none;">${targetUser.website}</a></div>` : ''}
                         <div class="profile-action-row">
                             ${isOwnProfile ? '' : `<button class="follow-btn ${isFollowing ? 'following' : ''}" onclick="toggleFollow('${targetUser.id}')">${isFollowing ? 'Following' : 'Follow'}</button>`}
                         </div>
@@ -1630,9 +1837,9 @@
                                         </div>
                                         <div class="post-text">${escapeHtml(tweet.text)}</div>
                                         <div class="post-actions">
-                                            <button class="action-btn">🤍 ${tweet.likes}</button>
-                                            <button class="action-btn">💬 ${tweet.replies}</button>
-                                            <button class="action-btn">🔄 ${tweet.retweets}</button>
+                                            <button class="action-btn">🤍 ${tweet.likes || 0}</button>
+                                            <button class="action-btn">💬 ${tweet.replies || 0}</button>
+                                            <button class="action-btn">🔁 ${tweet.retweets || 0}</button>
                                         </div>
                                     </div>
                                 </div>
@@ -1643,30 +1850,104 @@
             `;
         }
 
-        function renderTrends() {
+        async function getLiveHeadline(topicName) {
+            const normalizedTopic = topicName.replace(/^#/, '').trim();
+            if (liveNewsCache[normalizedTopic]) {
+                return liveNewsCache[normalizedTopic];
+            }
+
+            const searchUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(normalizedTopic)}&hl=en-US&gl=US&ceid=US:en`;
+            try {
+                const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(searchUrl)}`);
+                if (!response.ok) throw new Error('News fetch failed');
+                const data = await response.json();
+                const firstItem = data.items && data.items[0];
+                const headline = firstItem ? firstItem.title.replace(/<[^>]+>/g, '').trim() : null;
+                const source = firstItem && firstItem.author ? firstItem.author : 'Live report';
+                const result = headline ? { headline, source } : null;
+                liveNewsCache[normalizedTopic] = result;
+                return result;
+            } catch (error) {
+                const fallback = {
+                    headline: `${normalizedTopic} is making headlines as teams, builders, and creators share new updates.`,
+                    source: 'Live trend update'
+                };
+                liveNewsCache[normalizedTopic] = fallback;
+                return fallback;
+            }
+        }
+
+        async function renderTrends() {
             const container = document.getElementById('trendsList');
             const trends = [
-                { name: '#JavaScript', count: '245K' },
-                { name: '#WebDevelopment', count: '189K' },
-                { name: '#React', count: '156K' },
-                { name: '#TechNews', count: '432K' },
-                { name: '#Startups', count: '298K' }
+                { name: '#JavaScript', query: 'JavaScript', count: '245K' },
+                { name: '#WebDevelopment', query: 'Web Development', count: '189K' },
+                { name: '#React', query: 'React', count: '156K' },
+                { name: '#TechNews', query: 'Technology News', count: '432K' },
+                { name: '#Startups', query: 'Startups', count: '298K' }
             ];
 
-            container.innerHTML = trends.map(trend => `
-                <div class="trend">
-                    <div class="trend-category">Trending Worldwide</div>
-                    <div class="trend-name">${trend.name}</div>
-                    <div class="trend-count">${trend.count} posts</div>
-                </div>
-            `).join('');
+            container.innerHTML = '<div class="empty-state">Loading live updates…</div>';
+
+            const trendCards = await Promise.all(trends.map(async (trend) => {
+                const liveNews = await getLiveHeadline(trend.query);
+                return `
+                    <div class="trend" onclick="handleTrendClick('${trend.name}', '${liveNews.headline.replace(/'/g, "\\'")}')">
+                        <div class="trend-category">${liveNews.source}</div>
+                        <div class="trend-name">${trend.name}</div>
+                        <div class="trend-count">${trend.count} posts</div>
+                        <div style="margin-top: 8px; color: var(--text); font-size: 13px; line-height: 1.4;">${escapeHtml(liveNews.headline)}</div>
+                    </div>
+                `;
+            }));
+
+            container.innerHTML = trendCards.join('');
+        }
+
+        function handleTrendClick(trendName, liveHeadline = null) {
+            const liveText = liveHeadline
+                ? `Live report: ${liveHeadline}`
+                : `Live update: ${trendName} is blowing up right now and everyone's talking about it.`;
+            tweets.unshift({
+                id: Date.now(),
+                author: currentUser.name,
+                authorId: currentUser.id,
+                text: liveText,
+                timestamp: new Date(),
+                likes: 0,
+                liked: false,
+                reposted: false,
+                retweets: 0,
+                replies: 0,
+                comments: [],
+                showComments: false
+            });
+            currentUser.posts = currentUser.posts || [];
+            currentUser.posts.unshift({
+                id: Date.now() + 300,
+                text: liveText,
+                timestamp: new Date(),
+                likes: 0,
+                replies: 0,
+                retweets: 0
+            });
+            saveState();
+            renderFeed();
+            renderTrends();
         }
 
         function getAISuggestion() {
             const suggestion = aiSuggestions[Math.floor(Math.random() * aiSuggestions.length)];
-            const textarea = document.getElementById('composeTweet') || document.getElementById('tweetInput');
-            textarea.value = suggestion;
-            textarea.dispatchEvent(new Event('input'));
+            const mainComposer = document.getElementById('tweetInput');
+            const modalComposer = document.getElementById('composeTweet');
+            if (mainComposer) {
+                mainComposer.value = suggestion;
+                mainComposer.dispatchEvent(new Event('input'));
+            }
+            if (modalComposer) {
+                modalComposer.value = suggestion;
+                modalComposer.dispatchEvent(new Event('input'));
+            }
         }
 
         function openModal(id) {
@@ -1678,7 +1959,8 @@
         }
 
         function viewUserProfile(userId) {
-            selectedProfileUserId = userId;
+            const profileOwner = getUserById(userId);
+            selectedProfileUserId = profileOwner ? String(profileOwner.id) : String(userId || currentUser.id);
             switchPage('profile');
         }
 
@@ -1783,6 +2065,10 @@
             users = JSON.parse(localStorage.getItem('tweets_users') || '[]');
             bookmarks = JSON.parse(localStorage.getItem('tweets_bookmarks') || '[]');
             messages = JSON.parse(localStorage.getItem('tweets_messages') || '{}');
+            if (currentUser) {
+                ensureProfilePicture(currentUser, Number(currentUser.id || Date.now()));
+            }
+            users = (users || []).map((user, index) => ensureProfilePicture(user, Number(user?.id || index)));
         }
 
         // Start
